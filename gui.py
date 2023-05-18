@@ -14,13 +14,13 @@ def upload_csv():
 
 
 def generate_graph(df):
-    x_column = df['Pregnancies']
-    y_column = df['Glucose']
+    x_column = df[df.columns[0]]
+    y_column = df[df.columns[1]]
 
     plt.figure(figsize=(8, 6))
     plt.plot(x_column, y_column, 'x')
-    plt.xlabel('Pregnancies')
-    plt.ylabel('Glucose')
+    plt.xlabel(df.columns[0])
+    plt.ylabel(df.columns[1])
     plt.title('Reprezentacija zavisnosti trudnoce i glukoze')
     plt.grid(True)
 
