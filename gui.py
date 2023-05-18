@@ -2,7 +2,11 @@ import tkinter as tk
 from tkinter import filedialog
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-from ml import*
+from ml import *
+
+
+# Global variables
+window_close = False
 
 
 def upload_csv():
@@ -21,7 +25,7 @@ def generate_graph(df):
     plt.plot(x_column, y_column, 'x')
     plt.xlabel(df.columns[0])
     plt.ylabel(df.columns[1])
-    plt.title('Reprezentacija zavisnosti trudnoce i glukoze')
+    plt.title('Reprezentacija zavisnosti promenljivih')
     plt.grid(True)
 
     # Create a FigureCanvasTkAgg instance
@@ -33,19 +37,54 @@ def generate_graph(df):
     # upload_button.pack(pady=20)----------------------vraca dugme na displej---------------------------
 
 
+def start_program():
+    global window_close
+    window_close = True
+    intro_window.destroy()
+
+
+def on_closing():
+    intro_window.destroy()
+    window.quit()
+
+
+# ==================================== Create the intro window ===================================
+
+intro_window = tk.Tk()
+intro_window.title("Diplomski rad")
+intro_window.iconbitmap("logo.ico")
+intro_window.minsize(400, 300)
+
+# Create widgets for the intro screen
+intro_label = tk.Label(intro_window, text="Autor: Marko Vojinović 2019/0559")
+intro_label.pack(pady=10)
+intro_label = tk.Label(intro_window, text="Univerzitet u Beogradu, Elektrotehnićki Fakultet")
+intro_label.pack(pady=10)
+
+start_program_button = tk.Button(intro_window, text="Otpočnite sa radom", command=start_program,
+                                 font=('Arial', 12), bg='#4CAF50', fg='white',
+                                 activebackground='#45a049', activeforeground='white',
+                                 padx=10, pady=5)
+start_program_button.pack(pady=20)
+
+# Run the intro screen
+intro_window.mainloop()
+
 # ==================================== Create the main window ===================================
 
-window = tk.Tk()
-window.title("Diplomski rad")
-# Set minimum width and height
-window.minsize(400, 300)
+if window_close:
+    window = tk.Tk()
+    window.title("Diplomski rad")
+    window.iconbitmap("logo.ico")
+    # Set minimum width and height
+    window.minsize(400, 300)
 
-# Create the upload button with customized style
-upload_button = tk.Button(window, text="Unesite set podataka u CSV formatu", command=upload_csv,
-                          font=('Arial', 12), bg='#4CAF50', fg='white',
-                          activebackground='#45a049', activeforeground='white',
-                          padx=10, pady=5)
-upload_button.pack(pady=20)
+    # Create the upload button with customized style
+    upload_button = tk.Button(window, text="Unesite set podataka u CSV formatu", command=upload_csv,
+                              font=('Arial', 12), bg='#4CAF50', fg='white',
+                              activebackground='#45a049', activeforeground='white',
+                              padx=10, pady=5)
+    upload_button.pack(pady=20)
 
-# Start the GUI event loop
-window.mainloop()
+    # Start the GUI event loop
+    window.mainloop()
