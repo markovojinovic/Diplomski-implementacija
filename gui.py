@@ -1,8 +1,8 @@
 import tkinter as tk
 from tkinter import ttk
-from tkinter import filedialog
 from tkinter import messagebox
 import matplotlib.pyplot as plt
+import pandas as pd
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib
 from ml import *
@@ -21,17 +21,19 @@ output_layer_function_neural = "sigmoid"
 optimizer_neural = "adam"
 loss_function_neural = "binary_crossentropy"
 max_dept_decision_tree = -1
+model = None
 
 
 def upload_csv():
-    file_path = filedialog.askopenfilename(filetypes=[("CSV Files", "*.csv")])
+    file_path = filedialog.askopenfilename(filetypes=[("CSV files", "*.csv")])
     if file_path:
         df = pd.read_csv(file_path)
         generate_graph(df)
         global selected_algorithm
+        global model
         if selected_algorithm == 1:
             global parameter_knn
-            KNNprediction(df, parameter_knn)
+            model = train_knn(df, parameter_knn)
         elif selected_algorithm == 3:
             global number_of_epochs_neural
             global number_of_hidden_layers_neural
@@ -39,11 +41,42 @@ def upload_csv():
             global output_layer_function_neural
             global optimizer_neural
             global loss_function_neural
-            NeuralNetwork(df, number_of_hidden_layers_neural, hidden_layer_function_neural,
-                          output_layer_function_neural, optimizer_neural, loss_function_neural, number_of_epochs_neural)
+            model = train_neural(df, number_of_hidden_layers_neural, hidden_layer_function_neural,
+                                 output_layer_function_neural, optimizer_neural, loss_function_neural,
+                                 number_of_epochs_neural)
         elif selected_algorithm == 2:
             global max_dept_decision_tree
-            DecisionTree(df, max_dept_decision_tree)
+            model = train_decision_tree(df, max_dept_decision_tree)
+
+        treci_red.pack()
+        upload_csv_button.destroy()
+        save_model_button = tk.Button(treci_red, text="Sačuvajte model", command=save_model,
+                                      font=('Arial', 12), bg='#4CAF50', fg='white',
+                                      activebackground='#45a049', activeforeground='white',
+                                      padx=10, pady=5)
+        save_model_button.pack(side="left")
+
+
+def load_model():
+    global selected_algorithm
+    global model
+    if selected_algorithm == 1:
+        model = load_knn()
+    elif selected_algorithm == 3:
+        model = load_neural()
+    elif selected_algorithm == 2:
+        model = load_decision_tree()
+
+
+def save_model():
+    global selected_algorithm
+    global model
+    if selected_algorithm == 1:
+        model = save_knn(model)
+    elif selected_algorithm == 3:
+        model = save_neural(model)
+    elif selected_algorithm == 2:
+        model = save_decision_tree(model)
 
 
 def generate_graph(df):
@@ -63,6 +96,7 @@ def generate_graph(df):
     canvas.get_tk_widget().pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
     # Non-visible state for upload button and select menu
     treci_red.pack_forget()
+    cetvrti_red.pack_forget()
     if selected_algorithm == 1 or selected_algorithm == 2:
         drugi_red.pack_forget()
         treci_red.pack_forget()
@@ -178,7 +212,7 @@ intro_window.minsize(400, 300)
 # Create widgets for the intro screen
 intro_label = tk.Label(intro_window, text="Autor: Marko Vojinović 2019/0559")
 intro_label.pack(pady=10)
-intro_label = tk.Label(intro_window, text="Univerzitet u Beogradu, Elektrotehnićki Fakultet")
+intro_label = tk.Label(intro_window, text="Univerzitet u Beogradu, Elektrotehnički Fakultet")
 intro_label.pack()
 
 # Create a frame as the container
@@ -333,11 +367,20 @@ if window_close:
     treci_red = tk.Frame(window)
     treci_red.pack(pady=10)
     # Create the upload button with customized style
-    upload_button = tk.Button(treci_red, text="Unesite set podataka u CSV formatu", command=upload_csv,
-                              font=('Arial', 12), bg='#4CAF50', fg='white',
-                              activebackground='#45a049', activeforeground='white',
-                              padx=10, pady=5)
-    upload_button.pack(side="left")
+    upload_csv_button = tk.Button(treci_red, text="Unesite set podataka u CSV formatu", command=upload_csv,
+                                  font=('Arial', 12), bg='#4CAF50', fg='white',
+                                  activebackground='#45a049', activeforeground='white',
+                                  padx=10, pady=5)
+    upload_csv_button.pack(side="left")
+
+    cetvrti_red = tk.Frame(window)
+    cetvrti_red.pack(pady=10)
+
+    upload_model_button = tk.Button(cetvrti_red, text="Unesite postojeci model", command=load_model,
+                                    font=('Arial', 12), bg='#4CAF50', fg='white',
+                                    activebackground='#45a049', activeforeground='white',
+                                    padx=10, pady=5)
+    upload_model_button.pack(side="left")
 
     window.protocol("WM_DELETE_WINDOW", on_closing)
     # Start the GUI event loop

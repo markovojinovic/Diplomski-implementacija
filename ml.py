@@ -1,14 +1,15 @@
-import pandas as pd
+from tkinter import filedialog
+
+import joblib
 import tensorflow as tf
 import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.metrics import accuracy_score
 from sklearn.tree import DecisionTreeClassifier
 import threading
 
 
-def KNNprediction(df, parameter):
+def train_knn(df, parameter):
     # Drop rows with NaN values
     df.dropna(inplace=True)
 
@@ -24,28 +25,42 @@ def KNNprediction(df, parameter):
                                                         shuffle=True)
 
     # Create the KNN classifier
-    knn = KNeighborsClassifier(n_neighbors=parameter)
+    model = KNeighborsClassifier(n_neighbors=parameter)
 
     # Train the classifier using the training data
-    knn.fit(x_train, y_train)
+    model.fit(x_train, y_train)
 
-    # Make predictions on the test data
-    y_pred = knn.predict(x_test)
-
-    # Calculate the accuracy of the model
-    accuracy = accuracy_score(y_test, y_pred)
-    print(f"Accuracy: {accuracy}")
-
-    input1_value = 5.0
-    input2_value = 3.2
-    # Example usage: Predicting a single instance
-    new_instance = pd.DataFrame([[input1_value, input2_value]], columns=[df.columns[0], df.columns[1]])
-    prediction = knn.predict(new_instance)
-    print(f"Prediction: {prediction}")
+    return model
 
 
-def NeuralNetwork(df, number_of_hidden_layers, hidden_layer_function, output_layer_function, optimizer, loss_function,
-                  number_of_epochs):
+def retrain_knn(model, comlumn1, column2, output):
+    return
+
+
+def save_knn(model):
+    filepath = filedialog.askdirectory()
+    if filepath:
+        filepath += "/model.joblib"
+        joblib.dump(model, filepath)
+        return True
+    return False
+
+
+def load_knn():
+    filepath = filedialog.askopenfilename(filetypes=[("KNN files", "*.joblib")])
+    if filepath:
+        return joblib.load(filepath)
+    return None
+
+
+def predict_knn(model, comlumn1, column2, output):
+    return
+
+
+# ======================================================================================================================
+
+def train_neural(df, number_of_hidden_layers, hidden_layer_function, output_layer_function, optimizer, loss_function,
+                 number_of_epochs):
     # Load the dataset from a CSV file
     input_columns = [df.columns[0], df.columns[1]]
     output_column = df.columns[2]
@@ -69,18 +84,42 @@ def NeuralNetwork(df, number_of_hidden_layers, hidden_layer_function, output_lay
         # Train the model
         model.fit(X, Y, epochs=number_of_epochs, verbose=0)
 
-        # Make predictions
-        predictions = model.predict(X)
-        print(predictions)
-
     # Create a new thread for training the model
     training_thread = threading.Thread(target=train_model)
 
-    # Start the training thread
     training_thread.start()
+    training_thread.join()
+
+    return model
 
 
-def DecisionTree(df, max_dept):
+def retrain_neural(model, comlumn1, column2, output):
+    return
+
+
+def load_neural():
+    filepath = filedialog.askopenfilename(filetypes=[("Neural network files", "*.h5")])
+    if filepath:
+        return tf.keras.models.load_model(filepath)
+    return None
+
+
+def save_neural(model):
+    filepath = filedialog.askdirectory()
+    if filepath:
+        filepath += "/model.joblib"
+        model.save(filepath)
+        return True
+    return False
+
+
+def predict_neural(model, comlumn1, column2, output):
+    return
+
+
+# ======================================================================================================================
+
+def train_decision_tree(df, max_dept):
     # Load the dataset from a CSV file
     input_columns = df[[df.columns[0], df.columns[1]]]
     output_column = df[df.columns[2]]
@@ -90,11 +129,33 @@ def DecisionTree(df, max_dept):
     Y = df[output_column]
 
     # Create a decision tree classifier
-    model = DecisionTreeClassifier()
+    model = DecisionTreeClassifier(max_depth=max_dept)
 
     # Train the decision tree model
     model.fit(X, Y)
 
-    # Make predictions
-    predictions = model.predict(X)
-    print(predictions)
+    return model
+
+
+def retrain_decision_tree(model, comlumn1, column2, output):
+    return
+
+
+def load_decision_tree():
+    filepath = filedialog.askopenfilename(filetypes=[("Decision Tree files", "*.joblib")])
+    if filepath:
+        return joblib.load(filepath)
+    return None
+
+
+def save_decision_tree(model):
+    filepath = filedialog.askdirectory()
+    if filepath:
+        filepath += "/model.joblib"
+        joblib.dump(model, filepath)
+        return True
+    return False
+
+
+def predict_decision_tree(model, comlumn1, column2, output):
+    return
