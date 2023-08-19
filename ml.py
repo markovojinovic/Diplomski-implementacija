@@ -6,7 +6,12 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.preprocessing import StandardScaler
 import threading
+
+# global values
+column1_name = ""
+column2_name = ""
 
 
 def train_knn(df, parameter):
@@ -33,7 +38,7 @@ def train_knn(df, parameter):
     return model
 
 
-def retrain_knn(model, comlumn1, column2, output):
+def retrain_knn(model, column1, column2):
     return
 
 
@@ -53,8 +58,16 @@ def load_knn():
     return None
 
 
-def predict_knn(model, comlumn1, column2, output):
-    return
+def predict_knn(model, column1, column2):
+    # Input data for prediction
+    input_data = np.array([[column1, column2]])
+
+    # Standardize the input data using the same scaler you used during training
+    scaler = StandardScaler()
+    input_data_scaled = scaler.fit_transform(input_data)
+
+    # Make predictions using the trained KNN model
+    return model.predict(input_data_scaled)
 
 
 # ======================================================================================================================
@@ -93,7 +106,7 @@ def train_neural(df, number_of_hidden_layers, hidden_layer_function, output_laye
     return model
 
 
-def retrain_neural(model, comlumn1, column2, output):
+def retrain_neural(model, column1, column2):
     return
 
 
@@ -113,18 +126,30 @@ def save_neural(model):
     return False
 
 
-def predict_neural(model, comlumn1, column2, output):
-    return
+def predict_neural(model, column1, column2):
+    # Input data for prediction
+    input_data = np.array([[column1, column2]])
+
+    # Standardize the input data using the same scaler you used during training
+    scaler = StandardScaler()
+    input_data_scaled = scaler.fit_transform(input_data)
+
+    # Make predictions using the loaded model
+    return model.predict(input_data_scaled)
 
 
 # ======================================================================================================================
 
 def train_decision_tree(df, max_dept):
-    # Load the dataset from a CSV file
-    input_columns = df[[df.columns[0], df.columns[1]]]
-    output_column = df[df.columns[2]]
+    input_columns = [df.columns[0], df.columns[1]]
+    output_column = df.columns[2]
 
-    # Extract the input and output columns from the DataFrame
+    global column1_name
+    global column2_name
+    column1_name = df.columns[0]
+    column2_name = df.columns[1]
+
+    # Extract the input and output data from the DataFrame
     X = df[input_columns]
     Y = df[output_column]
 
@@ -137,7 +162,7 @@ def train_decision_tree(df, max_dept):
     return model
 
 
-def retrain_decision_tree(model, comlumn1, column2, output):
+def retrain_decision_tree(model, column1, column2):
     return
 
 
@@ -157,5 +182,16 @@ def save_decision_tree(model):
     return False
 
 
-def predict_decision_tree(model, comlumn1, column2, output):
-    return
+def predict_decision_tree(model, column1, column2):
+    # Input data for prediction
+    input_data = np.array([[column1, column2]])
+
+    # Standardize the input data using the same scaler you used during training
+    scaler = StandardScaler()
+    input_data_scaled = scaler.fit_transform(input_data)
+
+    # Make predictions using the loaded Decision Tree model
+    global column1_name
+    global column2_name
+    model.feature_names_ = [column1_name, column2_name]
+    return model.predict(input_data_scaled)

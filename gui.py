@@ -22,13 +22,35 @@ optimizer_neural = "adam"
 loss_function_neural = "binary_crossentropy"
 max_dept_decision_tree = -1
 model = None
+prediction_parameter1 = ""
+prediction_parameter2 = ""
+df = None
+new_x_points = []
+new_y_points = []
+peti_red = None
+middle_frame = None
+prediction_output = ""
 
 
 def upload_csv():
     file_path = filedialog.askopenfilename(filetypes=[("CSV files", "*.csv")])
     if file_path:
+
+        upload_csv_button.destroy()
+        treci_red.pack(pady=10)
+        save_model_button = tk.Button(treci_red, text="Sačuvajte model", command=save_model,
+                                      font=('Arial', 12), bg='#4CAF50', fg='white',
+                                      activebackground='#45a049', activeforeground='white',
+                                      padx=10, pady=5)
+        save_model_button.pack(side="left")
+
+        global df
         df = pd.read_csv(file_path)
-        generate_graph(df)
+        generate_graph()
+
+        global prediction_parameter1
+        global prediction_parameter2
+
         global selected_algorithm
         global model
         if selected_algorithm == 1:
@@ -48,13 +70,31 @@ def upload_csv():
             global max_dept_decision_tree
             model = train_decision_tree(df, max_dept_decision_tree)
 
-        treci_red.pack()
-        upload_csv_button.destroy()
-        save_model_button = tk.Button(treci_red, text="Sačuvajte model", command=save_model,
-                                      font=('Arial', 12), bg='#4CAF50', fg='white',
-                                      activebackground='#45a049', activeforeground='white',
-                                      padx=10, pady=5)
-        save_model_button.pack(side="left")
+        window.state('zoomed')
+
+
+def predict_model():
+    global prediction_parameter1
+    global prediction_parameter2
+    global new_x_points
+    global new_y_points
+    global prediction_output
+
+    new_x_points.append(int(prediction_parameter1))
+    new_y_points.append(int(prediction_parameter2))
+
+    prediciton_result = -1
+    if selected_algorithm == 1:
+        prediciton_result = predict_knn(model, int(prediction_parameter1), int(prediction_parameter2))
+    elif selected_algorithm == 2:
+        prediciton_result = predict_decision_tree(model, int(prediction_parameter1), int(prediction_parameter2))
+    elif selected_algorithm == 3:
+        prediciton_result = predict_neural(model, int(prediction_parameter1), int(prediction_parameter2))
+
+    prediction_output = str(prediciton_result[0])
+    generate_graph()
+
+    return prediciton_result
 
 
 def load_model():
@@ -79,27 +119,45 @@ def save_model():
         model = save_decision_tree(model)
 
 
-def generate_graph(df):
+def generate_graph():
+    global df
+    global new_x_points
+    global new_y_points
+    global peti_red
+    global middle_frame
+
+    # Extract columns
     x_column = df[df.columns[0]]
     y_column = df[df.columns[1]]
 
     plt.figure(figsize=(8, 6))
-    plt.plot(x_column, y_column, 'x')
+
+    # Plot existing data in blue 'x'
+    plt.plot(x_column, y_column, 'x', color='blue', label='Podaci iz seta')
+
+    # Plot new data in red 'o'
+    plt.plot(new_x_points, new_y_points, 'o', color='red', label='Vaši podaci')
+
     plt.xlabel(df.columns[0])
     plt.ylabel(df.columns[1])
     plt.title('Reprezentacija zavisnosti promenljivih')
     plt.grid(True)
+    plt.legend()
+
+    if middle_frame is not None:
+        middle_frame.pack_forget()
+    middle_frame = tk.Frame(window)
+    middle_frame.pack(expand=True, fill=tk.BOTH)
 
     # Create a FigureCanvasTkAgg instance
-    canvas = FigureCanvasTkAgg(plt.gcf(), master=window)
+    canvas = FigureCanvasTkAgg(plt.gcf(), master=middle_frame)
     canvas.draw()
-    canvas.get_tk_widget().pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
+    canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
     # Non-visible state for upload button and select menu
-    treci_red.pack_forget()
+
     cetvrti_red.pack_forget()
     if selected_algorithm == 1 or selected_algorithm == 2:
         drugi_red.pack_forget()
-        treci_red.pack_forget()
     if selected_algorithm == 3:
         drugi_red_1.pack_forget()
         drugi_red_2.pack_forget()
@@ -107,6 +165,55 @@ def generate_graph(df):
         drugi_red_4.pack_forget()
         drugi_red_5.pack_forget()
         drugi_red_6.pack_forget()
+
+    if peti_red is not None:
+        peti_red.pack_forget()
+    peti_red = tk.Frame(window)
+    peti_red.pack(pady=10)
+
+    label1 = tk.Label(peti_red, text="Unesite vrednost prve kolone za predvidjanje:")
+    label1.grid(row=0, column=0, padx=5, pady=5)
+    validate_command1 = (window.register(validate_parameter1_for_prediction), '%P')
+    entry1 = tk.Entry(peti_red, validate="key", validatecommand=validate_command1)
+    entry1.insert(0, str(prediction_parameter1))
+    entry1.grid(row=0, column=1, padx=30, pady=5)
+
+    label1 = tk.Label(peti_red, text="Unesite vrednost druge kolone za predvidjanje:")
+    label1.grid(row=1, column=0, padx=5, pady=5)
+    validate_command1 = (window.register(validate_parameter2_for_prediction), '%P')
+    entry1 = tk.Entry(peti_red, validate="key", validatecommand=validate_command1)
+    entry1.insert(0, str(prediction_parameter2))
+    entry1.grid(row=1, column=1, padx=30, pady=5)
+
+    predict_model_button = tk.Button(peti_red, text="Predvidite izlaz", command=predict_model,
+                                     font=('Arial', 12), bg='#4CAF50', fg='white',
+                                     activebackground='#45a049', activeforeground='white',
+                                     padx=10, pady=5)
+    predict_model_button.grid(row=1, column=2, padx=30, pady=5)
+
+    if prediction_output != "":
+        bold_font = ('Arial', 12, 'bold')
+        output_label = tk.Label(peti_red, text="Izlaz predvidjanja : " + prediction_output, fg="red", font=bold_font)
+        output_label.grid(row=1, column=3, padx=30, pady=5)
+        output_value = tk.Label(peti_red, text="", fg="blue")
+        output_value.grid(row=1, column=4, padx=30, pady=5)
+
+        question_label = tk.Label(peti_red, text="Da li su izlazna predvidjanja tačna?")
+        question_label.grid(row=0, column=5, padx=30, pady=5)
+
+        answer_buttons = tk.Frame(peti_red)
+        answer_buttons.grid(row=0, column=5, padx=30, pady=5)
+        yes_button = tk.Button(answer_buttons, text="Da", command=predict_model,
+                                         font=('Arial', 12), bg='#4CAF50', fg='white',
+                                         activebackground='#45a049', activeforeground='white',
+                                         padx=10, pady=5)
+        yes_button.grid(row=0, column=0, padx=30, pady=5)
+        no_button = tk.Button(answer_buttons, text="Ne", command=predict_model,
+                                         font=('Arial', 12), bg='#4CAF50', fg='white',
+                                         activebackground='#45a049', activeforeground='white',
+                                         padx=10, pady=5)
+        no_button.grid(row=0, column=1, padx=30, pady=5)
+        answer_buttons.grid(row=1, column=5, padx=30, pady=5)
 
 
 def start_program():
@@ -142,6 +249,24 @@ def validate_integer_for_knn(text):
         return True
     else:
         messagebox.showerror("Pogrešan unos", "Unesite cele brojeve, veće od 0")
+        return False
+
+
+def validate_parameter1_for_prediction(text):
+    global prediction_parameter1
+    if text.isdigit():
+        prediction_parameter1 = int(text)
+        return True
+    else:
+        return False
+
+
+def validate_parameter2_for_prediction(text):
+    global prediction_parameter2
+    if text.isdigit():
+        prediction_parameter2 = int(text)
+        return True
+    else:
         return False
 
 
