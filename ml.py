@@ -31,7 +31,9 @@ def train_knn(df, parameter):
     return model
 
 
-def save_knn(model):
+def save_knn(model, df):
+    global scaler
+
     filetypes = [("Joblib files", "*.joblib")]
     filepath = filedialog.asksaveasfilename(defaultextension=".joblib", filetypes=filetypes)
 
@@ -39,16 +41,27 @@ def save_knn(model):
         if not filepath.endswith(".joblib"):
             filepath += ".joblib"
 
-        joblib.dump(model, filepath)
+        objects_to_save = {
+            'model': model,
+            'df': df,
+            'scaler': scaler
+        }
+
+        joblib.dump(objects_to_save, filepath)
         return True
 
     return False
 
 
 def load_knn():
-    filepath = filedialog.askopenfilename(filetypes=[("KNN files", "*.joblib")])
+    filetypes = [("Joblib files", "*.joblib")]
+    filepath = filedialog.askopenfilename(filetypes=filetypes)
+
     if filepath:
-        return joblib.load(filepath)
+        global scaler
+        loaded_objects = joblib.load(filepath)
+        scaler = loaded_objects['scaler']
+        return loaded_objects
 
     return None
 
@@ -103,18 +116,48 @@ def retrain_neural(model, column1, column2, output, number_of_epochs):
 
 
 def load_neural():
-    filepath = filedialog.askopenfilename(filetypes=[("Neural network files", "*.h5")])
+    global scaler
+
+    filetypes = [("Joblib files", "*.joblib")]
+    filepath = filedialog.askopenfilename(filetypes=filetypes)
+
     if filepath:
-        return tf.keras.models.load_model(filepath)
+        # Load DataFrame and scaler using joblib
+        loaded_data = joblib.load(filepath)
 
-    return None
+        # Load TensorFlow model using tf.keras.models.load_model()
+        model_path = filepath + "_model"
+        loaded_model = tf.keras.models.load_model(model_path)
+
+        # Extract DataFrame, scaler, and model
+        loaded_df = loaded_data['df']
+        scaler = loaded_data['scaler']
+
+        return loaded_model, loaded_df
+
+    return None, None
 
 
-def save_neural(model):
-    filepath = filedialog.askdirectory()
+def save_neural(model, df):
+    global scaler
+
+    filetypes = [("Joblib files", "*.joblib")]
+    filepath = filedialog.asksaveasfilename(defaultextension=".joblib", filetypes=filetypes)
+
     if filepath:
-        filepath += "/model.joblib"
-        model.save(filepath)
+        if not filepath.endswith(".joblib"):
+            filepath += ".joblib"
+
+        # Save DataFrame and scaler using joblib
+        data_to_save = {
+            'df': df,
+            'scaler': scaler
+        }
+        joblib.dump(data_to_save, filepath)
+
+        # Save TensorFlow model using model.save()
+        model.save(filepath + "_model")
+
         return True
 
     return False
@@ -159,14 +202,21 @@ def retrain_decision_tree(model, column1, column2, output):
 
 
 def load_decision_tree():
-    filepath = filedialog.askopenfilename(filetypes=[("Decision Tree files", "*.joblib")])
+    filetypes = [("Joblib files", "*.joblib")]
+    filepath = filedialog.askopenfilename(filetypes=filetypes)
+
     if filepath:
-        return joblib.load(filepath)
+        global scaler
+        loaded_objects = joblib.load(filepath)
+        scaler = loaded_objects['scaler']
+        return loaded_objects
 
     return None
 
 
-def save_decision_tree(model):
+def save_decision_tree(model, df):
+    global scaler
+
     filetypes = [("Joblib files", "*.joblib")]
     filepath = filedialog.asksaveasfilename(defaultextension=".joblib", filetypes=filetypes)
 
@@ -174,7 +224,13 @@ def save_decision_tree(model):
         if not filepath.endswith(".joblib"):
             filepath += ".joblib"
 
-        joblib.dump(model, filepath)
+        objects_to_save = {
+            'model': model,
+            'df': df,
+            'scaler': scaler
+        }
+
+        joblib.dump(objects_to_save, filepath)
         return True
 
     return False

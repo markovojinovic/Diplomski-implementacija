@@ -7,7 +7,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib
 from ml import *
 
-# TODO: treba da se nekako cuva i scaler, kao i dataframe, problemi oko reakcije dugmeta za export na to
+# TODO: problemi oko reakcije dugmeta za export na to
 #  (kad je unet model ne treba da ga ima, ali ako se izmeni, treba da se pojavi)
 #  kao i to da se obavesti korinik kad je krenulo izracunavanje za modele, a pre nego se zavrsi
 
@@ -211,31 +211,55 @@ def repack_for_good_prediction():
 def load_model():
     global selected_algorithm
     global model
+    global df
     global loaded_export
+    global exported
+    global changed_loaded
 
     loaded_export = True
+    loaded_file = None
 
     if selected_algorithm == 1:
-        model = load_knn()
+        loaded_file = load_knn()
     elif selected_algorithm == 3:
-        model = load_neural()
+        loaded_file, df = load_neural()
     elif selected_algorithm == 2:
-        model = load_decision_tree()
+        loaded_file = load_decision_tree()
+
+    if selected_algorithm == 1 or selected_algorithm == 2:
+        model = loaded_file['model']
+        df = loaded_file['df']
+    else:
+        model = loaded_file
+
+    if model is not None and df is not None:
+        upload_csv_button.destroy()
+        if (not exported and not loaded_export) or changed_loaded:
+            treci_red.pack(pady=10)
+            save_model_button = tk.Button(treci_red, text="Sačuvajte model", command=save_model,
+                                          font=('Arial', 12), bg='#4CAF50', fg='white',
+                                          activebackground='#45a049', activeforeground='white',
+                                          padx=10, pady=5)
+            save_model_button.pack(side="left")
+
+        generate_graph()
+        window.state('zoomed')
 
 
 def save_model():
     global selected_algorithm
     global model
     global exported
+    global df
 
     exported = True
 
     if selected_algorithm == 1:
-        model = save_knn(model)
+        model = save_knn(model, df)
     elif selected_algorithm == 3:
-        model = save_neural(model)
+        model = save_neural(model, df)
     elif selected_algorithm == 2:
-        model = save_decision_tree(model)
+        model = save_decision_tree(model, df)
 
 
 def generate_graph():
