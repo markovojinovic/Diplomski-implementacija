@@ -7,6 +7,10 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib
 from ml import *
 
+# TODO: treba da se nekako cuva i scaler, kao i dataframe, problemi oko reakcije dugmeta za export na to
+#  (kad je unet model ne treba da ga ima, ali ako se izmeni, treba da se pojavi)
+#  kao i to da se obavesti korinik kad je krenulo izracunavanje za modele, a pre nego se zavrsi
+
 # Set the backend explicitly to TkAgg
 matplotlib.use('TkAgg')
 
@@ -20,7 +24,7 @@ hidden_layer_function_neural = "relu"
 output_layer_function_neural = "sigmoid"
 optimizer_neural = "adam"
 loss_function_neural = "binary_crossentropy"
-max_dept_decision_tree = -1
+max_dept_decision_tree = None
 model = None
 prediction_parameter1 = ""
 prediction_parameter2 = ""
@@ -30,6 +34,12 @@ new_y_points = []
 peti_red = None
 middle_frame = None
 prediction_output = ""
+real_output = ""
+exported = False
+loaded_export = False
+changed_loaded = False
+answer_buttons = None
+question_label = None
 
 
 def upload_csv():
@@ -37,12 +47,18 @@ def upload_csv():
     if file_path:
 
         upload_csv_button.destroy()
-        treci_red.pack(pady=10)
-        save_model_button = tk.Button(treci_red, text="Sačuvajte model", command=save_model,
-                                      font=('Arial', 12), bg='#4CAF50', fg='white',
-                                      activebackground='#45a049', activeforeground='white',
-                                      padx=10, pady=5)
-        save_model_button.pack(side="left")
+
+        global exported
+        global loaded_export
+        global changed_loaded
+
+        if (not exported and not loaded_export) or changed_loaded:
+            treci_red.pack(pady=10)
+            save_model_button = tk.Button(treci_red, text="Sačuvajte model", command=save_model,
+                                          font=('Arial', 12), bg='#4CAF50', fg='white',
+                                          activebackground='#45a049', activeforeground='white',
+                                          padx=10, pady=5)
+            save_model_button.pack(side="left")
 
         global df
         df = pd.read_csv(file_path)
@@ -79,6 +95,7 @@ def predict_model():
     global new_x_points
     global new_y_points
     global prediction_output
+    global model
 
     new_x_points.append(int(prediction_parameter1))
     new_y_points.append(int(prediction_parameter2))
@@ -97,9 +114,107 @@ def predict_model():
     return prediciton_result
 
 
+def retrain_model():
+    global real_output
+    global number_of_epochs_neural
+    global loaded_export
+    global exported
+    global changed_loaded
+    global answer_buttons
+    global question_label
+    global peti_red
+    global prediction_parameter2
+    global prediction_parameter1
+    global prediction_output
+
+    question_label.destroy()
+
+    if real_output != "":
+        answer_buttons.destroy()
+
+        if loaded_export or exported:
+            changed_loaded = True
+            treci_red.pack(pady=10)
+            save_model_button = tk.Button(treci_red, text="Sačuvajte model", command=save_model,
+                                          font=('Arial', 12), bg='#4CAF50', fg='white',
+                                          activebackground='#45a049', activeforeground='white',
+                                          padx=10, pady=5)
+            save_model_button.pack(side="left")
+            prediction_output = ""
+            prediction_parameter2 = ""
+            prediction_parameter1 = ""
+            prediction_parameter1 = ""
+            generate_graph()
+
+        if selected_algorithm == 2:
+            retrain_decision_tree(model, int(prediction_parameter1), int(prediction_parameter2), int(real_output))
+        elif selected_algorithm == 3:
+            retrain_neural(model, int(prediction_parameter1), int(prediction_parameter2), int(real_output),
+                           number_of_epochs_neural)
+
+    else:
+        question_label = tk.Label(peti_red, text="Model ne može biti pretreniran praznim izlazom")
+        question_label.grid(row=0, column=5, padx=30, pady=5)
+
+    return
+
+
+def repack_for_retrain():
+    global peti_red
+    global answer_buttons
+    global question_label
+    global real_output
+    global selected_algorithm
+
+    if selected_algorithm == 1:
+        answer_buttons.destroy()
+        question_label.destroy()
+        question_label = tk.Label(peti_red,
+                                  text="Za knn algoritam, nije moguće izvršiti pretreniranje sa jednom ulaznom vrednosti")
+        question_label.grid(row=0, column=5, padx=30, pady=5)
+    else:
+        question_label.destroy()
+        question_label = tk.Label(peti_red, text="Unesite realnu vrednost izlaza, i pretrenirajte model")
+        question_label.grid(row=0, column=5, padx=30, pady=5)
+
+        answer_buttons.destroy()
+        answer_buttons = tk.Frame(peti_red)
+        answer_buttons.grid(row=1, column=5, padx=30, pady=5)
+
+        validate_command1 = (window.register(validate_real_output), '%P')
+        entry1 = tk.Entry(answer_buttons, validate="key", validatecommand=validate_command1)
+        entry1.insert(0, str(real_output))
+        entry1.grid(row=0, column=0, padx=30, pady=5)
+
+        retrain_button = tk.Button(answer_buttons, text="Pretrenirajte model", command=retrain_model,
+                                   font=('Arial', 12), bg='#4CAF50', fg='white',
+                                   activebackground='#45a049', activeforeground='white',
+                                   padx=10, pady=5)
+        retrain_button.grid(row=0, column=1, padx=30, pady=5)
+
+    return
+
+
+def repack_for_good_prediction():
+    global peti_red
+    global answer_buttons
+    global question_label
+
+    answer_buttons.destroy()
+    question_label.destroy()
+    question_label = tk.Label(peti_red, text="Nakon dobrog predvidjanja model ostaje isti")
+    question_label.grid(row=0, column=5, padx=30, pady=5)
+
+    return
+
+
 def load_model():
     global selected_algorithm
     global model
+    global loaded_export
+
+    loaded_export = True
+
     if selected_algorithm == 1:
         model = load_knn()
     elif selected_algorithm == 3:
@@ -111,6 +226,10 @@ def load_model():
 def save_model():
     global selected_algorithm
     global model
+    global exported
+
+    exported = True
+
     if selected_algorithm == 1:
         model = save_knn(model)
     elif selected_algorithm == 3:
@@ -192,7 +311,11 @@ def generate_graph():
     predict_model_button.grid(row=1, column=2, padx=30, pady=5)
 
     if prediction_output != "":
+        global answer_buttons
+        global question_label
+
         bold_font = ('Arial', 12, 'bold')
+
         output_label = tk.Label(peti_red, text="Izlaz predvidjanja : " + prediction_output, fg="red", font=bold_font)
         output_label.grid(row=1, column=3, padx=30, pady=5)
         output_value = tk.Label(peti_red, text="", fg="blue")
@@ -203,15 +326,15 @@ def generate_graph():
 
         answer_buttons = tk.Frame(peti_red)
         answer_buttons.grid(row=0, column=5, padx=30, pady=5)
-        yes_button = tk.Button(answer_buttons, text="Da", command=predict_model,
-                                         font=('Arial', 12), bg='#4CAF50', fg='white',
-                                         activebackground='#45a049', activeforeground='white',
-                                         padx=10, pady=5)
+        yes_button = tk.Button(answer_buttons, text="Da", command=repack_for_good_prediction,
+                               font=('Arial', 12), bg='#4CAF50', fg='white',
+                               activebackground='#45a049', activeforeground='white',
+                               padx=10, pady=5)
         yes_button.grid(row=0, column=0, padx=30, pady=5)
-        no_button = tk.Button(answer_buttons, text="Ne", command=predict_model,
-                                         font=('Arial', 12), bg='#4CAF50', fg='white',
-                                         activebackground='#45a049', activeforeground='white',
-                                         padx=10, pady=5)
+        no_button = tk.Button(answer_buttons, text="Ne", command=repack_for_retrain,
+                              font=('Arial', 12), bg='#4CAF50', fg='white',
+                              activebackground='#45a049', activeforeground='white',
+                              padx=10, pady=5)
         no_button.grid(row=0, column=1, padx=30, pady=5)
         answer_buttons.grid(row=1, column=5, padx=30, pady=5)
 
@@ -265,6 +388,15 @@ def validate_parameter2_for_prediction(text):
     global prediction_parameter2
     if text.isdigit():
         prediction_parameter2 = int(text)
+        return True
+    else:
+        return False
+
+
+def validate_real_output(text):
+    global real_output
+    if text.isdigit():
+        real_output = int(text)
         return True
     else:
         return False
