@@ -17,7 +17,7 @@ scaler = None
 # TODO: proveriti da li treba scaler za neural
 
 
-def train_knn(df, parameter):
+def train_knn(df, number_of_neibhours, leaf_size, p, weight, metric, algorithm):
     global scaler
 
     df.dropna(inplace=True)
@@ -25,7 +25,8 @@ def train_knn(df, parameter):
     output_column = df.iloc[:, 2]
     scaler = StandardScaler()
     input_columns_scaled = scaler.fit_transform(input_columns)
-    model = KNeighborsClassifier(n_neighbors=parameter)
+    model = KNeighborsClassifier(n_neighbors=number_of_neibhours, leaf_size=leaf_size, p=p, weights=weight,
+                                 metric=metric, algorithm=algorithm)
     model.fit(input_columns_scaled, output_column)
 
     return model
@@ -173,7 +174,7 @@ def predict_neural(model, column1, column2):
 
 # ======================================================================================================================
 
-def train_decision_tree(df, max_dept):
+def train_decision_tree(df, max_dept, criterion, splitter, random_state):
     global column1_name
     global column2_name
     global scaler
@@ -184,7 +185,8 @@ def train_decision_tree(df, max_dept):
     scaler = StandardScaler()
     input_columns_scaled = scaler.fit_transform(input_columns)
 
-    model = DecisionTreeClassifier(max_depth=max_dept)
+    model = DecisionTreeClassifier(max_depth=max_dept, criterion=criterion, splitter=splitter,
+                                   random_state=random_state)
     model.fit(input_columns_scaled, output_column)
 
     return model

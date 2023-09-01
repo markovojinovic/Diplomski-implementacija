@@ -10,21 +10,33 @@ from ml import *
 # TODO: problemi oko reakcije dugmeta za export na to
 #  (kad je unet model ne treba da ga ima, ali ako se izmeni, treba da se pojavi)
 #  kao i to da se obavesti korinik kad je krenulo izracunavanje za modele, a pre nego se zavrsi
+#  videti sta sve moze da se dodaje od parametara za algoritme, na dokumentacijama, i ako fali nesto - dodati
 
-# Set the backend explicitly to TkAgg
 matplotlib.use('TkAgg')
 
 # Global variables
 window_close = False
 selected_algorithm = 1
-parameter_knn = 3
+
+number_of_neighbours_knn = 5
+weight_knn = "uniform"
+algorithm_knn = "auto"
+leaf_size_knn = 30
+p_knn = 2
+metric_knn = "minkowski"
+
 number_of_epochs_neural = 100
 number_of_hidden_layers_neural = 2
 hidden_layer_function_neural = "relu"
 output_layer_function_neural = "sigmoid"
 optimizer_neural = "adam"
 loss_function_neural = "binary_crossentropy"
+
 max_dept_decision_tree = None
+criterion_decision_tree = "gini"
+splitter_decision_tree = "best"
+random_state_decision_tree = None
+
 model = None
 prediction_parameter1 = ""
 prediction_parameter2 = ""
@@ -70,8 +82,13 @@ def upload_csv():
         global selected_algorithm
         global model
         if selected_algorithm == 1:
-            global parameter_knn
-            model = train_knn(df, parameter_knn)
+            global number_of_neighbours_knn
+            global leaf_size_knn
+            global p_knn
+            global weight_knn
+            global metric_knn
+            global algorithm_knn
+            model = train_knn(df, number_of_neighbours_knn, leaf_size_knn, p_knn, weight_knn, metric_knn, algorithm_knn)
         elif selected_algorithm == 3:
             global number_of_epochs_neural
             global number_of_hidden_layers_neural
@@ -84,7 +101,11 @@ def upload_csv():
                                  number_of_epochs_neural)
         elif selected_algorithm == 2:
             global max_dept_decision_tree
-            model = train_decision_tree(df, max_dept_decision_tree)
+            global criterion_decision_tree
+            global splitter_decision_tree
+            global random_state_decision_tree
+            model = train_decision_tree(df, max_dept_decision_tree, criterion_decision_tree, splitter_decision_tree,
+                                        random_state_decision_tree)
 
         window.state('zoomed')
 
@@ -269,16 +290,13 @@ def generate_graph():
     global peti_red
     global middle_frame
 
-    # Extract columns
     x_column = df[df.columns[0]]
     y_column = df[df.columns[1]]
 
     plt.figure(figsize=(8, 6))
 
-    # Plot existing data in blue 'x'
     plt.plot(x_column, y_column, 'x', color='blue', label='Podaci iz seta')
 
-    # Plot new data in red 'o'
     plt.plot(new_x_points, new_y_points, 'o', color='red', label='Vaši podaci')
 
     plt.xlabel(df.columns[0])
@@ -292,20 +310,22 @@ def generate_graph():
     middle_frame = tk.Frame(window)
     middle_frame.pack(expand=True, fill=tk.BOTH)
 
-    # Create a FigureCanvasTkAgg instance
     canvas = FigureCanvasTkAgg(plt.gcf(), master=middle_frame)
     canvas.draw()
     canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
-    # Non-visible state for upload button and select menu
 
     cetvrti_red.pack_forget()
-    if selected_algorithm == 1 or selected_algorithm == 2:
+    drugi_red_2.pack_forget()
+    drugi_red_3.pack_forget()
+    drugi_red_4.pack_forget()
+    if selected_algorithm == 1:
+        drugi_red.pack_forget()
+        drugi_red_5.pack_forget()
+        drugi_red_6.pack_forget()
+    if selected_algorithm == 2:
         drugi_red.pack_forget()
     if selected_algorithm == 3:
         drugi_red_1.pack_forget()
-        drugi_red_2.pack_forget()
-        drugi_red_3.pack_forget()
-        drugi_red_4.pack_forget()
         drugi_red_5.pack_forget()
         drugi_red_6.pack_forget()
 
@@ -384,19 +404,31 @@ def on_menu_select(event):
         selected_algorithm = 3
 
 
-def validate_integer_for_knn(text):
-    global parameter_knn
+def validate_number_of_neibhours_knn(text):
+    global number_of_neighbours_knn
     global selected_algorithm
     if text.isdigit() or text == "":
         if text != "":
-            parameter_knn = int(text)
-            if parameter_knn > 10 or parameter_knn < 3:
+            number_of_neighbours_knn = int(text)
+            if number_of_neighbours_knn > 10 or number_of_neighbours_knn < 3:
                 messagebox.showwarning("Opseg izvan preporučenog",
                                        "Preporučen opseg za KNN algoritam je izmedju 3 i 10!")
         return True
     else:
         messagebox.showerror("Pogrešan unos", "Unesite cele brojeve, veće od 0")
         return False
+
+
+def validate_integer_knn(text):
+    global number_of_neighbours_knn
+    global selected_algorithm
+    if not text.isdigit() and text != "":
+        messagebox.showerror("Pogrešan unos", "Unesite cele brojeve, veće od 0")
+        return False
+    else:
+        global leaf_size_knn
+        leaf_size_knn = int(text)
+        return True
 
 
 def validate_parameter1_for_prediction(text):
@@ -426,7 +458,7 @@ def validate_real_output(text):
         return False
 
 
-def validate_integer_for_decision_tree(text):
+def validate_dept_for_decision_tree(text):
     global max_dept_decision_tree
     global selected_algorithm
     if text.isdigit() or text == "":
@@ -439,6 +471,16 @@ def validate_integer_for_decision_tree(text):
     else:
         messagebox.showerror("Pogrešan unos", "Unesite cele brojeve, veće od 0")
         return False
+
+
+def validate_integer_for_decision_tree(text):
+    if not text.isdigit() and text != "":
+        messagebox.showerror("Pogrešan unos", "Unesite cele brojeve, veće od 0")
+        return False
+    else:
+        global random_state_decision_tree
+        random_state_decision_tree = int(text)
+        return True
 
 
 def validate_integer_for_neural(text, chosen):
@@ -483,6 +525,32 @@ def on_function_select_neural(event, chosen):
         loss_function_neural = selected_item
 
 
+def on_function_select_knn(event, chosen):
+    if chosen == '1':
+        global weight_knn
+        selected_item = dropdown_weight_knn.get()
+        weight_knn = selected_item
+    elif chosen == '2':
+        global algorithm_knn
+        selected_item = dropdown_algorithm_knn.get()
+        algorithm_knn = selected_item
+    else:
+        global metric_knn
+        selected_item = dropdown_metric_knn.get()
+        metric_knn = selected_item
+
+
+def on_function_select_decision_tree(event, chosen):
+    if chosen == '1':
+        global criterion_decision_tree
+        selected_item = dropdown_criterion_decision_tree.get()
+        criterion_decision_tree = selected_item
+    else:
+        global splitter_decision_tree
+        selected_item = dropdown_splitter_decision_tree.get()
+        splitter_decision_tree = selected_item
+
+
 # ==================================== Create the intro window ===================================
 
 intro_window = tk.Tk()
@@ -490,27 +558,21 @@ intro_window.title("Diplomski rad")
 intro_window.iconbitmap("logo.ico")
 intro_window.minsize(400, 300)
 
-# Create widgets for the intro screen
 intro_label = tk.Label(intro_window, text="Autor: Marko Vojinović 2019/0559")
 intro_label.pack(pady=10)
 intro_label = tk.Label(intro_window, text="Univerzitet u Beogradu, Elektrotehnički Fakultet")
 intro_label.pack()
 
-# Create a frame as the container
 prvi_red = tk.Frame(intro_window)
 prvi_red.pack(pady=10)
 label = tk.Label(prvi_red, text="Odaberite algoritam za mašinsko učenje: ")
 label.pack(side="left")
-# Create a style for the dropdown
 style = ttk.Style()
 style.configure("TCombobox", foreground="red", background="lightgray", padding=6)
-# Create a dropdown menu
 dropdown_algorithm = ttk.Combobox(prvi_red, values=["KNN", "Stablo odlučivanja", "Neuralna mreža"], state="readonly",
                                   style="TCombobox")
 dropdown_algorithm.pack(side="left")
-# Set a default value for the dropdown
 dropdown_algorithm.set("KNN")
-# Bind the event when a menu item is selected
 dropdown_algorithm.bind("<<ComboboxSelected>>", on_menu_select)
 
 start_program_button = tk.Button(intro_window, text="Otpočnite sa radom", command=start_program,
@@ -519,7 +581,6 @@ start_program_button = tk.Button(intro_window, text="Otpočnite sa radom", comma
                                  padx=10, pady=5)
 start_program_button.pack(pady=20)
 
-# Run the intro screen
 intro_window.mainloop()
 
 # ==================================== Create the main window ===================================
@@ -528,99 +589,160 @@ if window_close:
     window = tk.Tk()
     window.title("Diplomski rad")
     window.iconbitmap("logo.ico")
-    # Set minimum width and height
     window.minsize(600, 450)
 
+    style = ttk.Style()
+    style.configure("TCombobox", foreground="red", background="lightgray", padding=6)
+
     if selected_algorithm == 1:  # KNN
-        # Create a frame as the container
+
         drugi_red = tk.Frame(window)
         drugi_red.pack(pady=10)
-        # Create a validation command to allow only integers
-        validate_command = (window.register(validate_integer_for_knn), '%P')
-        # Create an input box for integers
-        label = tk.Label(drugi_red, text="Unesite argument KNN algoritma:")
+        validate_command = (window.register(validate_number_of_neibhours_knn), '%P')
+        label = tk.Label(drugi_red, text="Unesite broj komšija:")
         label.pack(side="left")
         entry = tk.Entry(drugi_red, validate="key", validatecommand=validate_command)
-        entry.insert(0, str(parameter_knn))
+        entry.insert(0, str(number_of_neighbours_knn))
         entry.pack(side="left")
 
+        drugi_red_2 = tk.Frame(window)
+        drugi_red_2.pack(pady=10)
+        label_weight_knn = tk.Label(drugi_red_2, text="Odaberite funkciju za težinsku obradu:")
+        label_weight_knn.pack(side="left")
+        dropdown_weight_knn = ttk.Combobox(drugi_red_2, values=["uniform", "distance"],
+                                           state="readonly",
+                                           style="TCombobox")
+        dropdown_weight_knn.pack(side="left")
+        dropdown_weight_knn.set("uniform")
+        dropdown_weight_knn.bind("<<ComboboxSelected>>", lambda event: on_function_select_knn(event, '1'))
+
+        drugi_red_3 = tk.Frame(window)
+        drugi_red_3.pack(pady=10)
+        label_algorithm_knn = tk.Label(drugi_red_3, text="Odaberite algoritam unutar funkcije:")
+        label_algorithm_knn.pack(side="left")
+        dropdown_algorithm_knn = ttk.Combobox(drugi_red_3, values=["auto", "ball_tree", "kd_tree", "brute"],
+                                              state="readonly",
+                                              style="TCombobox")
+        dropdown_algorithm_knn.pack(side="left")
+        dropdown_algorithm_knn.set("auto")
+        dropdown_algorithm_knn.bind("<<ComboboxSelected>>", lambda event: on_function_select_knn(event, '2'))
+
+        drugi_red_4 = tk.Frame(window)
+        drugi_red_4.pack(pady=10)
+        validate_command = (window.register(validate_integer_knn), '%P')
+        label1 = tk.Label(drugi_red_4, text="Unesite broj listova:")
+        label1.pack(side="left")
+        entry1 = tk.Entry(drugi_red_4, validate="key", validatecommand=validate_command)
+        entry1.insert(0, str(leaf_size_knn))
+        entry1.pack(side="left")
+
+        drugi_red_5 = tk.Frame(window)
+        drugi_red_5.pack(pady=10)
+        validate_command = (window.register(validate_integer_knn), '%P')
+        label2 = tk.Label(drugi_red_5, text="Unesite parametar za Minkowski udaljenost:")
+        label2.pack(side="left")
+        entry2 = tk.Entry(drugi_red_5, validate="key", validatecommand=validate_command)
+        entry2.insert(0, str(p_knn))
+        entry2.pack(side="left")
+
+        drugi_red_6 = tk.Frame(window)
+        drugi_red_6.pack(pady=10)
+        label_metric_knn = tk.Label(drugi_red_6, text="Odaberite metriku:")
+        label_metric_knn.pack(side="left")
+        dropdown_metric_knn = ttk.Combobox(drugi_red_6, values=["minkowski", "euclidean", "haversine", "manhattan"],
+                                           state="readonly",
+                                           style="TCombobox")
+        dropdown_metric_knn.pack(side="left")
+        dropdown_metric_knn.set("minkowski")
+        dropdown_metric_knn.bind("<<ComboboxSelected>>", lambda event: on_function_select_knn(event, '3'))
+
     if selected_algorithm == 2:  # Decision tree
-        # Create a frame as the container
+
         drugi_red = tk.Frame(window)
         drugi_red.pack(pady=10)
-        # Create a validation command to allow only integers
-        validate_command = (window.register(validate_integer_for_decision_tree), '%P')
-        # Create an input box for integers
+        validate_command = (window.register(validate_dept_for_decision_tree), '%P')
         label = tk.Label(drugi_red, text="Unesite najveću dubinu stabla odlučivanja:")
         label.pack(side="left")
         entry = tk.Entry(drugi_red, validate="key", validatecommand=validate_command)
         entry.pack(side="left")
 
+        drugi_red_2 = tk.Frame(window)
+        drugi_red_2.pack(pady=10)
+        label_criterion_decision_tree = tk.Label(drugi_red_2, text="Odaberite funkciju za kriterijum stabla:")
+        label_criterion_decision_tree.pack(side="left")
+        dropdown_criterion_decision_tree = ttk.Combobox(drugi_red_2, values=["gini", "entropy", "log_loss"],
+                                                        state="readonly",
+                                                        style="TCombobox")
+        dropdown_criterion_decision_tree.pack(side="left")
+        dropdown_criterion_decision_tree.set("gini")
+        dropdown_criterion_decision_tree.bind("<<ComboboxSelected>>",
+                                              lambda event: on_function_select_decision_tree(event, '1'))
+
+        drugi_red_3 = tk.Frame(window)
+        drugi_red_3.pack(pady=10)
+        label_splitter_decision_tree = tk.Label(drugi_red_3, text="Odaberite funkciju za podelu stabla:")
+        label_splitter_decision_tree.pack(side="left")
+        dropdown_splitter_decision_tree = ttk.Combobox(drugi_red_3, values=["best", "random"],
+                                                       state="readonly",
+                                                       style="TCombobox")
+        dropdown_splitter_decision_tree.pack(side="left")
+        dropdown_splitter_decision_tree.set("best")
+        dropdown_splitter_decision_tree.bind("<<ComboboxSelected>>",
+                                             lambda event: on_function_select_decision_tree(event, '2'))
+
+        drugi_red_4 = tk.Frame(window)
+        drugi_red_4.pack(pady=10)
+        validate_command = (window.register(validate_integer_for_decision_tree), '%P')
+        label = tk.Label(drugi_red_4, text="Unesite nasumičan broj za obradu stabla:")
+        label.pack(side="left")
+        entry = tk.Entry(drugi_red_4, validate="key", validatecommand=validate_command)
+        entry.pack(side="left")
+
     if selected_algorithm == 3:  # Neural network
 
-        # Create a style for the dropdown
-        style = ttk.Style()
-        style.configure("TCombobox", foreground="red", background="lightgray", padding=6)
-
-        # Create a frame as the container
         drugi_red_1 = tk.Frame(window)
         drugi_red_1.pack(pady=10)
-        # Create a validation command to allow only integers
         validate_command = (window.register(validate_integer_for_neural), '%P', '1')
-        # Create an input box for integers
         label_hidden_layer_neural = tk.Label(drugi_red_1, text="Unesite broj sakrivenih slojeva:")
         label_hidden_layer_neural.pack(side="left")
         entry_hidden_layers_neural = tk.Entry(drugi_red_1, validate="key", validatecommand=validate_command)
         entry_hidden_layers_neural.insert(0, str(number_of_hidden_layers_neural))
         entry_hidden_layers_neural.pack(side="left")
 
-        # Create a frame as the container
         drugi_red_2 = tk.Frame(window)
         drugi_red_2.pack(pady=10)
         label_hidden_layer_neural = tk.Label(drugi_red_2, text="Odaberite funkciju za obradu sakrivenog sloja:")
         label_hidden_layer_neural.pack(side="left")
-        # Create a dropdown menu
         dropdown_hidden_layer_neural = ttk.Combobox(drugi_red_2, values=["relu", "sigmoid", "softmax", "tanh"],
                                                     state="readonly",
                                                     style="TCombobox")
         dropdown_hidden_layer_neural.pack(side="left")
-        # Set a default value for the dropdown
         dropdown_hidden_layer_neural.set("relu")
         dropdown_hidden_layer_neural.bind("<<ComboboxSelected>>", lambda event: on_function_select_neural(event, '1'))
 
-        # Create a frame as the container
         drugi_red_3 = tk.Frame(window)
         drugi_red_3.pack(pady=10)
-        # Create an input box for integers
         label_output_layer_neural = tk.Label(drugi_red_3, text="Odaberite funkciju obrade izlaznog sloja:")
         label_output_layer_neural.pack(side="left")
-        # Create a dropdown menu
         dropdown_output_layer_neural = ttk.Combobox(drugi_red_3, values=["relu", "sigmoid", "softmax", "tanh"],
                                                     state="readonly",
                                                     style="TCombobox")
         dropdown_output_layer_neural.pack(side="left")
-        # Set a default value for the dropdown
         dropdown_output_layer_neural.set("sigmoid")
         dropdown_output_layer_neural.bind("<<ComboboxSelected>>", lambda event: on_function_select_neural(event, '2'))
 
-        # Create a frame as the container
         drugi_red_4 = tk.Frame(window)
         drugi_red_4.pack(pady=10)
-        # Create an input box for integers
         label_optimizer_neural = tk.Label(drugi_red_4, text="Odaberite optimizator:")
         label_optimizer_neural.pack(side="left")
-        # Create a dropdown menu
         dropdown_optimizer_neural = ttk.Combobox(drugi_red_4, values=["adam", "SGD", "RMSprop"], state="readonly",
                                                  style="TCombobox")
         dropdown_optimizer_neural.pack(side="left")
-        # Set a default value for the dropdown
         dropdown_optimizer_neural.set("adam")
         dropdown_optimizer_neural.bind("<<ComboboxSelected>>", lambda event: on_function_select_neural(event, '3'))
 
-        # Create a frame as the container
         drugi_red_5 = tk.Frame(window)
         drugi_red_5.pack(pady=10)
-        # Create an input box for integers
         label_loss_neural = tk.Label(drugi_red_5, text="Odaberite funkciju obrade gubitka:")
         label_loss_neural.pack(side="left")
         dropdown_loss_neural = ttk.Combobox(drugi_red_5,
@@ -628,26 +750,20 @@ if window_close:
                                             state="readonly",
                                             style="TCombobox")
         dropdown_loss_neural.pack(side="left")
-        # Set a default value for the dropdown
         dropdown_loss_neural.set("binary_crossentropy")
         dropdown_loss_neural.bind("<<ComboboxSelected>>", lambda event: on_function_select_neural(event, '4'))
 
-        # Create a frame as the container
         drugi_red_6 = tk.Frame(window)
         drugi_red_6.pack(pady=10)
-        # Create a validation command to allow only integers
         validate_command = (window.register(validate_integer_for_neural), '%P', '2')
-        # Create an input box for integers
         label_epochs_neural = tk.Label(drugi_red_6, text="Unesite broj epoha:")
         label_epochs_neural.pack(side="left")
         entry_epochs_neural = tk.Entry(drugi_red_6, validate="key", validatecommand=validate_command)
         entry_epochs_neural.insert(0, str(number_of_epochs_neural))
         entry_epochs_neural.pack(side="left")
 
-    # Create a frame as the container
     treci_red = tk.Frame(window)
     treci_red.pack(pady=10)
-    # Create the upload button with customized style
     upload_csv_button = tk.Button(treci_red, text="Unesite set podataka u CSV formatu", command=upload_csv,
                                   font=('Arial', 12), bg='#4CAF50', fg='white',
                                   activebackground='#45a049', activeforeground='white',
@@ -664,8 +780,6 @@ if window_close:
     upload_model_button.pack(side="left")
 
     window.protocol("WM_DELETE_WINDOW", on_closing)
-    # Start the GUI event loop
     window.mainloop()
 
-    # Explicitly quit the Tkinter event loop
     window.quit()
