@@ -7,36 +7,27 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib
 from ml import *
 
-# TODO: problemi oko reakcije dugmeta za export na to
-#  (kad je unet model ne treba da ga ima, ali ako se izmeni, treba da se pojavi)
-#  kao i to da se obavesti korinik kad je krenulo izracunavanje za modele, a pre nego se zavrsi
-#  videti sta sve moze da se dodaje od parametara za algoritme, na dokumentacijama, i ako fali nesto - dodati
-
 matplotlib.use('TkAgg')
 
 # Global variables
 window_close = False
 selected_algorithm = 1
-
 number_of_neighbours_knn = 5
 weight_knn = "uniform"
 algorithm_knn = "auto"
 leaf_size_knn = 30
 p_knn = 2
 metric_knn = "minkowski"
-
 number_of_epochs_neural = 100
 number_of_hidden_layers_neural = 2
 hidden_layer_function_neural = "relu"
 output_layer_function_neural = "sigmoid"
 optimizer_neural = "adam"
 loss_function_neural = "binary_crossentropy"
-
 max_dept_decision_tree = None
 criterion_decision_tree = "gini"
 splitter_decision_tree = "best"
 random_state_decision_tree = None
-
 model = None
 prediction_parameter1 = ""
 prediction_parameter2 = ""
@@ -52,35 +43,22 @@ loaded_export = False
 changed_loaded = False
 answer_buttons = None
 question_label = None
+save_model_button = None
+wait_message = None
 
 
 def upload_csv():
     file_path = filedialog.askopenfilename(filetypes=[("CSV files", "*.csv")])
     if file_path:
-
-        upload_csv_button.destroy()
-
-        global exported
-        global loaded_export
-        global changed_loaded
-
-        if (not exported and not loaded_export) or changed_loaded:
-            treci_red.pack(pady=10)
-            save_model_button = tk.Button(treci_red, text="Sačuvajte model", command=save_model,
-                                          font=('Arial', 12), bg='#4CAF50', fg='white',
-                                          activebackground='#45a049', activeforeground='white',
-                                          padx=10, pady=5)
-            save_model_button.pack(side="left")
-
         global df
+        global prediction_parameter1
+        global prediction_parameter2
+        global selected_algorithm
+        global model
+
         df = pd.read_csv(file_path)
         generate_graph()
 
-        global prediction_parameter1
-        global prediction_parameter2
-
-        global selected_algorithm
-        global model
         if selected_algorithm == 1:
             global number_of_neighbours_knn
             global leaf_size_knn
@@ -108,6 +86,8 @@ def upload_csv():
                                         random_state_decision_tree)
 
         window.state('zoomed')
+
+    return
 
 
 def predict_model():
@@ -153,25 +133,18 @@ def retrain_model():
     if real_output != "":
         answer_buttons.destroy()
 
-        if loaded_export or exported:
-            changed_loaded = True
-            treci_red.pack(pady=10)
-            save_model_button = tk.Button(treci_red, text="Sačuvajte model", command=save_model,
-                                          font=('Arial', 12), bg='#4CAF50', fg='white',
-                                          activebackground='#45a049', activeforeground='white',
-                                          padx=10, pady=5)
-            save_model_button.pack(side="left")
-            prediction_output = ""
-            prediction_parameter2 = ""
-            prediction_parameter1 = ""
-            prediction_parameter1 = ""
-            generate_graph()
-
         if selected_algorithm == 2:
             retrain_decision_tree(model, int(prediction_parameter1), int(prediction_parameter2), int(real_output))
         elif selected_algorithm == 3:
             retrain_neural(model, int(prediction_parameter1), int(prediction_parameter2), int(real_output),
                            number_of_epochs_neural)
+
+        if loaded_export or exported:
+            changed_loaded = True
+            prediction_output = ""
+            prediction_parameter1 = ""
+            prediction_parameter2 = ""
+            generate_graph()
 
     else:
         question_label = tk.Label(peti_red, text="Model ne može biti pretreniran praznim izlazom")
@@ -254,15 +227,6 @@ def load_model():
         model = loaded_file
 
     if model is not None and df is not None:
-        upload_csv_button.destroy()
-        if (not exported and not loaded_export) or changed_loaded:
-            treci_red.pack(pady=10)
-            save_model_button = tk.Button(treci_red, text="Sačuvajte model", command=save_model,
-                                          font=('Arial', 12), bg='#4CAF50', fg='white',
-                                          activebackground='#45a049', activeforeground='white',
-                                          padx=10, pady=5)
-            save_model_button.pack(side="left")
-
         generate_graph()
         window.state('zoomed')
 
@@ -272,15 +236,19 @@ def save_model():
     global model
     global exported
     global df
+    global changed_loaded
 
     exported = True
+    changed_loaded = False
 
     if selected_algorithm == 1:
-        model = save_knn(model, df)
+        save_knn(model, df)
     elif selected_algorithm == 3:
-        model = save_neural(model, df)
+        save_neural(model, df)
     elif selected_algorithm == 2:
-        model = save_decision_tree(model, df)
+        save_decision_tree(model, df)
+
+    generate_graph()
 
 
 def generate_graph():
@@ -289,6 +257,22 @@ def generate_graph():
     global new_y_points
     global peti_red
     global middle_frame
+    global exported
+    global loaded_export
+    global changed_loaded
+
+    upload_csv_button.destroy()
+    treci_red.pack_forget()
+    global save_model_button
+    if save_model_button is not None:
+        save_model_button.destroy()
+    if (not exported and not loaded_export) or changed_loaded:
+        treci_red.pack(pady=10)
+        save_model_button = tk.Button(treci_red, text="Sačuvajte model", command=save_model,
+                                      font=('Arial', 12), bg='#4CAF50', fg='white',
+                                      activebackground='#45a049', activeforeground='white',
+                                      padx=10, pady=5)
+        save_model_button.pack(side="left")
 
     x_column = df[df.columns[0]]
     y_column = df[df.columns[1]]
