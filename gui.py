@@ -1,3 +1,5 @@
+import os
+import sys
 import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox
@@ -6,6 +8,16 @@ import pandas as pd
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib
 from ml import *
+
+
+def resource_path(relative_path):
+    try:
+        base_path = sys._MEIPASS2
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
+
 
 matplotlib.use('TkAgg')
 
@@ -98,16 +110,16 @@ def predict_model():
     global prediction_output
     global model
 
-    new_x_points.append(int(prediction_parameter1))
-    new_y_points.append(int(prediction_parameter2))
+    new_x_points.append(prediction_parameter1)
+    new_y_points.append(prediction_parameter2)
 
     prediciton_result = -1
     if selected_algorithm == 1:
-        prediciton_result = predict_knn(model, int(prediction_parameter1), int(prediction_parameter2))
+        prediciton_result = predict_knn(model, prediction_parameter1, prediction_parameter2)
     elif selected_algorithm == 2:
-        prediciton_result = predict_decision_tree(model, int(prediction_parameter1), int(prediction_parameter2))
+        prediciton_result = predict_decision_tree(model, prediction_parameter1, prediction_parameter2)
     elif selected_algorithm == 3:
-        prediciton_result = predict_neural(model, int(prediction_parameter1), int(prediction_parameter2))
+        prediciton_result = predict_neural(model, prediction_parameter1, prediction_parameter2)
 
     prediction_output = str(prediciton_result[0])
     generate_graph()
@@ -134,9 +146,9 @@ def retrain_model():
         answer_buttons.destroy()
 
         if selected_algorithm == 2:
-            retrain_decision_tree(model, int(prediction_parameter1), int(prediction_parameter2), int(real_output))
+            retrain_decision_tree(model, prediction_parameter1, prediction_parameter2, real_output)
         elif selected_algorithm == 3:
-            retrain_neural(model, int(prediction_parameter1), int(prediction_parameter2), int(real_output),
+            retrain_neural(model, prediction_parameter1, prediction_parameter2, real_output,
                            number_of_epochs_neural)
 
         if loaded_export or exported:
@@ -417,28 +429,28 @@ def validate_integer_knn(text):
 
 def validate_parameter1_for_prediction(text):
     global prediction_parameter1
-    if text.isdigit():
-        prediction_parameter1 = int(text)
+    try:
+        prediction_parameter1 = float(text)
         return True
-    else:
+    except ValueError:
         return False
 
 
 def validate_parameter2_for_prediction(text):
     global prediction_parameter2
-    if text.isdigit():
-        prediction_parameter2 = int(text)
+    try:
+        prediction_parameter2 = float(text)
         return True
-    else:
+    except ValueError:
         return False
 
 
 def validate_real_output(text):
     global real_output
-    if text.isdigit():
-        real_output = int(text)
+    try:
+        real_output = float(text)
         return True
-    else:
+    except ValueError:
         return False
 
 
@@ -538,8 +550,8 @@ def on_function_select_decision_tree(event, chosen):
 # ==================================== Create the intro window ===================================
 
 intro_window = tk.Tk()
-intro_window.title("Diplomski rad")
-intro_window.iconbitmap("logo.ico")
+intro_window.title("MASIM")
+intro_window.iconbitmap(resource_path("icon.ico"))
 intro_window.minsize(400, 300)
 
 intro_label = tk.Label(intro_window, text="Autor: Marko Vojinović 2019/0559")
@@ -571,8 +583,8 @@ intro_window.mainloop()
 
 if window_close:
     window = tk.Tk()
-    window.title("Diplomski rad")
-    window.iconbitmap("logo.ico")
+    window.title("MASIM")
+    window.iconbitmap(resource_path("icon.ico"))
     window.minsize(600, 450)
 
     style = ttk.Style()

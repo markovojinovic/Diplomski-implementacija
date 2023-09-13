@@ -1,5 +1,4 @@
 from tkinter import filedialog
-
 import joblib
 import tensorflow as tf
 import numpy as np
@@ -7,6 +6,8 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.preprocessing import StandardScaler
 import threading
+
+# MASIM (Akronim za "Machine Learning Algorithm Simulator")
 
 # global values
 column1_name = ""
@@ -123,14 +124,9 @@ def load_neural():
     filepath = filedialog.askopenfilename(filetypes=filetypes)
 
     if filepath:
-        # Load DataFrame and scaler using joblib
         loaded_data = joblib.load(filepath)
-
-        # Load TensorFlow model using tf.keras.models.load_model()
         model_path = filepath + "_model"
         loaded_model = tf.keras.models.load_model(model_path)
-
-        # Extract DataFrame, scaler, and model
         loaded_df = loaded_data['df']
         scaler = loaded_data['scaler']
 
@@ -148,15 +144,11 @@ def save_neural(model, df):
     if filepath:
         if not filepath.endswith(".joblib"):
             filepath += ".joblib"
-
-        # Save DataFrame and scaler using joblib
         data_to_save = {
             'df': df,
             'scaler': scaler
         }
         joblib.dump(data_to_save, filepath)
-
-        # Save TensorFlow model using model.save()
         model.save(filepath + "_model")
 
         return True
