@@ -3,7 +3,9 @@ import joblib
 import tensorflow as tf
 import numpy as np
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.neighbors import KNeighborsRegressor
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.tree import DecisionTreeRegressor
 from sklearn.preprocessing import StandardScaler
 import threading
 
@@ -177,8 +179,8 @@ def train_decision_tree(df, max_dept, criterion, splitter, random_state):
     scaler = StandardScaler()
     input_columns_scaled = scaler.fit_transform(input_columns)
 
-    model = DecisionTreeClassifier(max_depth=max_dept, criterion=criterion, splitter=splitter,
-                                   random_state=random_state)
+    model = DecisionTreeRegressor(max_depth=max_dept, splitter=splitter,
+                                  random_state=random_state)
     model.fit(input_columns_scaled, output_column)
 
     return model

@@ -1,65 +1,55 @@
 import pandas as pd
+import numpy as np
+import tensorflow as tf
 from sklearn.model_selection import train_test_split
-from sklearn.tree import DecisionTreeClassifier
+from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import accuracy_score
 
-data = pd.read_csv('diabetes-skracena-druge_dve_kolone.csv')
+# Load your data from a CSV file
+data = pd.read_csv('cars.csv')  # Replace 'your_data.csv' with your CSV file path
+X = data.iloc[:, :2]  # Features
+y = data.iloc[:, 2]   # Target variable
 
-X = data[['Glucose', 'BloodPressure']].values
-y = data['Outcome'].values
+# Split the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-rand = 0
-max_acc = -1
-max_rand = -1
-max_size = -1
-max_dept = -1
-percentage = 0
-while rand < 100:
-    size = 0.2
-    while size < 0.5:
-        dept = 3
-        while dept < 100:
+# Define parameters to test
+hidden_layers = [2, 5, 15]
+epochs_values = [100, 400]
 
-            # Split data into training and testing sets
-            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=size, random_state=rand)
+results = []
 
-            # Create and train the Decision Tree classifier
-            clf = DecisionTreeClassifier(random_state=rand, max_depth=dept)
-            clf.fit(X_train, y_train)
+for num_layers in hidden_layers:
+    for num_epochs in epochs_values:
+        model = tf.keras.Sequential()
+        model.add(tf.keras.layers.Input(shape=(X_train.shape[1],)))
+        for _ in range(num_layers):
+            model.add(tf.keras.layers.Dense(128, activation='relu'))
+        model.add(tf.keras.layers.Dense(1, activation='sigmoid'))
 
-            # Make predictions
-            y_pred = clf.predict(X_test)
+        model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
 
-            # Calculate accuracy
-            accuracy = accuracy_score(y_test, y_pred)
-            # print("Accuracy:", accuracy)
-            if accuracy > max_acc:
-                max_acc = accuracy
-                max_rand = rand
-                max_size = size
-                max_dept = dept
+        # Check for NaN values in X_train and y_train
+        if X_train.isnull().any().any() or y_train.isnull().any().any():
+            print("NaN values found in training data. Check data preprocessing.")
+            continue
 
-            dept += 1
+        model.fit(X_train, y_train, epochs=num_epochs, verbose=0)
 
-        size += 0.01
+        # Make predictions
+        y_pred = model.predict(X_test)
+        y_pred = np.round(y_pred)
 
-    percentage += 1
-    print("Finished ", percentage, "%")
+        # Check for NaN values in predictions
+        if np.isnan(y_pred).any():
+            print("NaN values found in predictions. Check training process.")
+            continue
 
-    rand += 1
+        accuracy = accuracy_score(y_test, y_pred)
+        accuracy_percentage = accuracy * 100
 
+        results.append((num_layers, num_epochs, accuracy_percentage))
 
-print("Best rand number = ", max_rand)
-print("Best size of test data = ", max_size)
-print("Best max dept = ", max_rand)
-print("Max accuracy = ", max_acc)
-
-# for input_vals, prediction in zip(X_test, y_pred):
-#     print(f"Input: {input_vals}, Prediction: {prediction}")
-
-# Best rand number =  56
-# Best size of test data =  0.21000000000000002
-# Best max dept =  56
-# Max accuracy =  0.8209876543209876
-
-
+# Print the results
+for num_layers, num_epochs, accuracy_percentage in results:
+    print(f"Hidden Layers: {num_layers}, Epochs: {num_epochs}, Accuracy (%): {accuracy_percentage:.2f}%")
